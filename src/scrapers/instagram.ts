@@ -293,7 +293,7 @@ export const scrapeIGTV = async (
                     const cookies = await fs.readJSON(INSTAGRAM_COOKIES_FILENAME);
                     await p.setCookie(...cookies);
                 }
-                // await p.goto(igtvUrl);
+                await p.goto(igtvUrl);
                 for (let i = 0; i < profile.igtv.length; i++) {
                     try {
                         await sleep(1000);
