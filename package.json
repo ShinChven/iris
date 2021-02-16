@@ -20,7 +20,7 @@
   },
   "license": "ISC",
   "bin": {
-    "iris": "lib/bin.js"
+    "iris": "lib/cli.js"
   },
   "dependencies": {
     "download": "^8.0.0",
