@@ -1,6 +1,6 @@
 # Iris
 
-> Internet feed downloader.
+> Internet scraper.
 > 
 > This is a cli, you must use it from command line.
 
@@ -24,15 +24,21 @@ iris <URL-TO-SCRAPE>
 
 ### Scrape Instagram
 
+```bash
+iris <INSTAGRAM-PROFILE-URL>
+```
+
 This is the only supported site at initial release.
 
 The program will fire up a Chrome instance via puppeteer to scrape instagram profile.
 
 Manual login is required as instagram is preventing puppeteer from typing in username and password programmatically, as of Feb 15th, 2021. 
 
-Please login your instagram account manually when chrome pops up, cookies will be saved to the app's data dir (which is in user's home dir) to reuse.
+Please log in your instagram account manually when chrome pops up, cookies will be saved to the app's data dir (which is in user's home dir) to reuse.
 
-Please `DO NOT` use your main account for security issue.
+Please `DO NOT` use your main account for scraping might your account banned.
+
+Please `DO NOT` steal others' privacy and respect contents owner.
 
 Scraping can be slow.
 

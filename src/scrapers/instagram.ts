@@ -352,7 +352,7 @@ export const scrapeIGTV = async (
             const cookies = await fs.readJSON(INSTAGRAM_COOKIES_FILENAME);
             await page.setCookie(...cookies);
         }
-        await page.goto(igtvUrl).catch(e => console.log('catch'));
+        await page.goto(igtvUrl).catch(() => console.log('catch'));
     });
 
 }
@@ -391,12 +391,6 @@ export interface Page_info {
 export interface Dimensions {
     height: number;
     width: number;
-}
-
-export interface Display_resources {
-    src: string;
-    config_width: number;
-    config_height: number;
 }
 
 export interface MediaCaptionEdgeNode {
