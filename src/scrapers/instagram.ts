@@ -7,6 +7,7 @@ import qs from "qs";
 import {sleep} from "../utils/sleep-promise";
 import {taskId} from "../utils/task-id";
 import {downloadFiles} from "../io/download";
+import Timeout = NodeJS.Timeout;
 
 export const INSTAGRAM_DATA_DIR = path.join(APP_DATA_DIR, 'instagram');
 export const INSTAGRAM_COOKIES_FILENAME = path.join(INSTAGRAM_DATA_DIR, 'cookies.json');
@@ -15,7 +16,14 @@ export const INSTAGRAM_COOKIES_FILENAME = path.join(INSTAGRAM_DATA_DIR, 'cookies
  * Remove queries from profile url, return the clean url.
  * @param profileUrl Url of the instagram profile you want to scrape
  */
-export const getPureProfileUrl = (profileUrl: string) => profileUrl && profileUrl.split('?')[0];
+export const getPureProfileUrl = (profileUrl: string) => {
+    const url = profileUrl && profileUrl.split('?')[0];
+    if (url.lastIndexOf('/') === url.length - 1) {
+        return url;
+    } else {
+        return `${url}/`
+    }
+};
 
 /**
  * Get Profile id/name from instagram profile url.
@@ -269,6 +277,7 @@ export const scrapeIGTV = async (
         });
 
         const page = await browser.newPage();
+        let timeout:Timeout;
 
         // start scraping at when loaded
         page.on('load', async () => {
@@ -280,7 +289,11 @@ export const scrapeIGTV = async (
             // check if the igtv page loaded
             const pageUrl = page.url();
             if (pageUrl.indexOf(getPureProfileUrl(igtvUrl)) === 0) {
-
+                // set timeout for finding edge_felix_video_timeline
+                timeout = setTimeout(() => {
+                    resolve(profile);
+                    browser.close();
+                }, 5000);
                 // start auto scroll to activate HTTPRequest for video page shortcode scraping
                 await autoScroll(page);
                 // scroll ended, return data
@@ -295,7 +308,7 @@ export const scrapeIGTV = async (
                 await p.goto(igtvUrl);
                 for (let i = 0; i < profile.igtv.length; i++) {
                     try {
-                        await sleep(1000);
+                        await sleep(2000);
                         const igtv = profile.igtv[i];
                         const videoUrl = await scrapeIGTVVideo({tvUrl: getIGTVUrl(igtv), page: p});
                         profile.igtvFiles.push(videoUrl);
@@ -319,6 +332,9 @@ export const scrapeIGTV = async (
                         console.log(query_hash);
                         const igResp = (await resp.json()) as InstagramQueryResponse;
                         const edges = igResp?.data?.user?.edge_felix_video_timeline?.edges;
+                        if (edges) {
+                            clearTimeout(timeout);
+                        }
                         edges?.forEach(({node}) => {
                             profile.igtv.push(node);
                             profile.igtvFiles.push(node.display_url);
