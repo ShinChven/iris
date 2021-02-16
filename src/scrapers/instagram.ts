@@ -1,13 +1,12 @@
-import { autoScroll, executablePaths } from "../utils/puppeteer";
-import puppeteer, { HTTPRequest, HTTPResponse } from 'puppeteer-core';
+import {autoScroll, executablePaths} from "../utils/puppeteer";
+import puppeteer, {HTTPRequest, HTTPResponse} from 'puppeteer-core';
 import fs from 'fs-extra';
 import path from "path";
-import { APP_DATA_DIR } from "../utils/paths";
+import {APP_DATA_DIR} from "../utils/paths";
 import qs from "qs";
-import { sleep } from "../utils/sleep-promise";
-import { taskId } from "../utils/task-id";
-import { downloadFiles } from "../io/download";
-import { rejects } from "assert";
+import {sleep} from "../utils/sleep-promise";
+import {taskId} from "../utils/task-id";
+import {downloadFiles} from "../io/download";
 
 export const INSTAGRAM_DATA_DIR = path.join(APP_DATA_DIR, 'instagram');
 export const INSTAGRAM_COOKIES_FILENAME = path.join(INSTAGRAM_DATA_DIR, 'cookies.json');
@@ -36,15 +35,15 @@ export const getProfileName = (profileUrl: string) => {
 }
 
 /**
- * Download the instagram profile's timeline posts and IGTV videos. 
- * 
- * Manual login is required as instagram is preventing puppeteer from typing in username and password programmatically, as of Feb 15th, 2021. 
+ * Download the instagram profile's timeline posts and IGTV videos.
+ *
+ * Manual login is required as instagram is preventing puppeteer from typing in username and password programmatically, as of Feb 15th, 2021.
  * Please login your instagram account manually, cookies will be saved to the app's data dir which is in user's home dir.
- * 
+ *
  * @param profileUrl {string} Url of the instagram profile you want to scrape
  * @param proxy {string} Use a proxy for downloader if given.
  */
-export const downloadProfile = async ({ profileUrl, proxy }: { profileUrl: string, proxy?: string }) => {
+export const downloadProfile = async ({profileUrl, proxy}: { profileUrl: string, proxy?: string }) => {
 
     // make room to store contents scraped.
     const profileDir = path.join(INSTAGRAM_DATA_DIR, getProfileName(profileUrl)!);
@@ -52,16 +51,16 @@ export const downloadProfile = async ({ profileUrl, proxy }: { profileUrl: strin
     console.log(profileDir);
 
     // fetch profile's content urls via puppeteer.
-    const profile = await fetchProfile({ profileUrl });
+    const profile = await fetchProfile({profileUrl});
 
     // use downloader to download all file urls to user's home dir:
     // 1. download timeline files.
-    await downloadFiles({ outputDir: profileDir, proxy, tasks: profile.timelineFiles.map(f => ({ url: f })) });
+    await downloadFiles({outputDir: profileDir, proxy, tasks: profile.timelineFiles.map(f => ({url: f}))});
     // 2. download igtv files.
     await downloadFiles({
         outputDir: path.join(profileDir, 'igtv'),
         proxy,
-        tasks: profile.igtvFiles.map(f => ({ url: f })),
+        tasks: profile.igtvFiles.map(f => ({url: f})),
     });
 }
 
@@ -69,13 +68,13 @@ export const downloadProfile = async ({ profileUrl, proxy }: { profileUrl: strin
  * Fetch instagram profile's media content.
  * @param profileUrl {string} Url of the instagram profile you want to scrape
  */
-export const fetchProfile = async ({ profileUrl }: { profileUrl: string }) => {
+export const fetchProfile = async ({profileUrl}: { profileUrl: string }) => {
 
     // scrape timeline feeds via puppeteer
-    const profile = await scrapeTimeline({ profileUrl });
+    const profile = await scrapeTimeline({profileUrl});
 
     // scrape igtv videos feeds via puppeteer
-    const { igtvFiles, igtv } = await scrapeIGTV({ igtvUrl: `${getPureProfileUrl(profileUrl)}channel` });
+    const {igtvFiles, igtv} = await scrapeIGTV({igtvUrl: `${getPureProfileUrl(profileUrl)}channel`});
     profile.igtv = igtv;
     profile.igtvFiles = igtvFiles;
 
@@ -93,10 +92,10 @@ export const fetchProfile = async ({ profileUrl }: { profileUrl: string }) => {
 
 /**
  * Fetch instagram profile's timeline posts via puppeteer, while scraping, a chrome will be fired up.
- * 
- * Manual login is required as instagram is preventing puppeteer from typing in username and password programmatically, as of Feb 15th, 2021. 
+ *
+ * Manual login is required as instagram is preventing puppeteer from typing in username and password programmatically, as of Feb 15th, 2021.
  * Please login your instagram account manually, cookies will be saved to the app's data dir which is in user's home dir.
- * 
+ *
  * @param profileUrl {string} Url of the instagram profile you want to scrape
  */
 export const scrapeTimeline = async (
@@ -208,14 +207,14 @@ export const scrapeTimeline = async (
             try {
                 const networkUrl = resp.url();
                 const querystring = networkUrl.split('?')[1];
-                const { query_hash } = qs.parse(querystring);
+                const {query_hash} = qs.parse(querystring);
                 if (query_hash) {
                     console.log(query_hash);
                     const igResp = (await resp.json()) as InstagramQueryResponse;
                     const edges = igResp?.data?.user?.edge_web_feed_timeline?.edges
                         || igResp?.data?.user?.edge_owner_to_timeline_media?.edges
                         || igResp?.data?.user?.edge_felix_video_timeline?.edges;
-                    edges?.forEach(({ node }) => {
+                    edges?.forEach(({node}) => {
                         addNodeToProfile(node);
                     });
                 }
@@ -262,7 +261,7 @@ export const scrapeIGTV = async (
             igtvFiles: [],
         };
 
-        // init puppeteer 
+        // init puppeteer
         const browser = await puppeteer.launch({
             headless: false,
             executablePath: executablePaths[process.platform],
@@ -298,7 +297,7 @@ export const scrapeIGTV = async (
                     try {
                         await sleep(1000);
                         const igtv = profile.igtv[i];
-                        const videoUrl = await scrapeIGTVVideo({ tvUrl: getIGTVUrl(igtv), page: p });
+                        const videoUrl = await scrapeIGTVVideo({tvUrl: getIGTVUrl(igtv), page: p});
                         profile.igtvFiles.push(videoUrl);
                     } catch (e) {
                         console.error(e);
@@ -315,12 +314,12 @@ export const scrapeIGTV = async (
                 try {
                     const networkUrl = resp.url();
                     const querystring = networkUrl.split('?')[1];
-                    const { query_hash } = qs.parse(querystring);
+                    const {query_hash} = qs.parse(querystring);
                     if (query_hash) {
                         console.log(query_hash);
                         const igResp = (await resp.json()) as InstagramQueryResponse;
                         const edges = igResp?.data?.user?.edge_felix_video_timeline?.edges;
-                        edges?.forEach(({ node }) => {
+                        edges?.forEach(({node}) => {
                             profile.igtv.push(node);
                             profile.igtvFiles.push(node.display_url);
                         });
@@ -347,7 +346,7 @@ export const scrapeIGTV = async (
  * @param tvUrl {string} tv url
  * @param page {puppeteer.Page} reused puppeteer browser page
  */
-const scrapeIGTVVideo = async ({ tvUrl, page }: { tvUrl: string, page: puppeteer.Page }) => {
+const scrapeIGTVVideo = async ({tvUrl, page}: { tvUrl: string, page: puppeteer.Page }) => {
     return new Promise<string>(async (resolve, reject) => {
         let timeout = setTimeout(() => reject(`timeout: ${tvUrl}`), 5000);
         page.on('request', async (req: HTTPRequest) => {
@@ -366,9 +365,7 @@ const scrapeIGTVVideo = async ({ tvUrl, page }: { tvUrl: string, page: puppeteer
 }
 
 
-
-
-/// types 
+/// types
 
 export interface Page_info {
     has_next_page: boolean;
