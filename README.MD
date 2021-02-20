@@ -2,7 +2,7 @@
 
 > Internet scraper.
 > 
-> This is a cli, you must use it from command line.
+> This is a cli app, you must use it from command line.
 
 ## Install
 
