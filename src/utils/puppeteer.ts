@@ -1,8 +1,10 @@
 import puppeteer from "puppeteer-core";
+import fs from "fs-extra";
+import path from "path";
 
 /**
- * Chrome executablePaths for puppeteer, available for win32 and darwin. 
- * 
+ * Chrome executablePaths for puppeteer, available for win32 and darwin.
+ *
  * If your platform arch is not in one of these two, please modify this constant from source.
  */
 export const executablePaths: {
@@ -16,7 +18,7 @@ export const executablePaths: {
  * A puppeteer auto scroll script.
  * @param page {puppeteer.Page}
  */
-export async function autoScroll(page:puppeteer.Page){
+export async function autoScroll(page: puppeteer.Page) {
     await page.evaluate(async () => {
         console.log('start scroll');
         await new Promise<void>((resolve, _reject) => {
@@ -36,3 +38,43 @@ export async function autoScroll(page:puppeteer.Page){
     });
 }
 
+/**
+ * init puppeteer
+ */
+export const newBrowser = async () => {
+    return await puppeteer.launch({
+        headless: false,
+        executablePath: executablePaths[process.platform],
+        defaultViewport: undefined,
+    });
+}
+
+interface CookiesArgs {
+    page: puppeteer.Page;
+    cookiesPath: string;
+}
+
+/**
+ * Load saved cookies from json file to page if exists.
+ * @param page
+ * @param cookiesPath
+ */
+export const loadCookies = async ({page, cookiesPath}: CookiesArgs) => {
+    // load saved cookies, so you don't have to login every time.
+    if (fs.existsSync(cookiesPath)) {
+        const cookies = await fs.readJSON(cookiesPath);
+        await page.setCookie(...cookies);
+    }
+}
+
+/**
+ * Output cookies from page to json file
+ * @param page
+ * @param cookiesPath
+ */
+export const outputCookies = async ({page, cookiesPath}: CookiesArgs) => {
+    // save cookies
+    const cookies = await page.cookies();
+    await fs.ensureDir(path.dirname(cookiesPath));
+    await fs.writeJSON(cookiesPath, cookies);
+}
