@@ -37,7 +37,7 @@ iris https://www.instagram.com/{PROFILE_NAME} --headless
 ### Options
 |Option|Description|
 |---|---|
-|--headless|Run puppeteer in headless mode. When you have log in to some sites, add this option to run scraper without Chrome UI.|
+|--headless|Run puppeteer in headless mode. After you log in to some sites, you can add this option to run scraper without Chrome UI.|
 
 ### Scrape Instagram
 
@@ -61,7 +61,7 @@ Scraping can be slow.
 
 ### Download
 
-Media files will be downloaded to program's data dir: `~/.iris`.
+Media files will be downloaded to this application's data dir: `~/.iris`.
 
 Existing files won't be downloaded again. If something's broken, delete it manually.
 
