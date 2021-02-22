@@ -7,16 +7,18 @@ import {getOptions} from "./options";
 
 console.log('data dir:', APP_DATA_DIR);
 
-const {proxy} = getConfig();
-
-if (proxy) {
-    console.log('using proxy for download:', proxy);
-}
 
 const url = process.argv[2];
 
 const options = getOptions();
-options.proxy = proxy;
+
+const {proxy} = getConfig();
+if (!options.proxy) {
+    options.proxy = proxy;
+}
+if (proxy) {
+    console.log('using proxy for download:', proxy);
+}
 
 
 if (url.indexOf('set') === 0) {

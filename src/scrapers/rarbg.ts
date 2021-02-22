@@ -66,9 +66,10 @@ export const scrapeRarbgSearchResult = async (scrapeArgs: RarbgScrapeArgs) => {
                 outputCookies({page, cookiesPath: RARBG_COOKIES_FILENAME}).then().catch();
             }
             const elements = await page.$$(RARBG_SEARCH_RESULT_ITEM_SELECTOR);
+
             if (elements.length > 0) {
                 for (let i = 0; i < elements.length; i++) {
-                    console.log(`index in current page:${i}\t current page length:${elements.length}\t scraped:${torrents.length}`);
+                    console.log(`row:${i}\t table length:${elements.length}\t scraped:${torrents.length}`);
                     const e = elements[i];
                     try {
                         const href = await e.evaluate(a => a.getAttribute('href'));
