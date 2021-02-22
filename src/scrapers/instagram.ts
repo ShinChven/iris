@@ -1,4 +1,4 @@
-import {autoScroll, executablePaths} from "../utils/puppeteer";
+import {autoScroll, newBrowser} from "../utils/puppeteer";
 import puppeteer, {HTTPRequest, HTTPResponse} from 'puppeteer-core';
 import fs from 'fs-extra';
 import path from "path";
@@ -50,8 +50,12 @@ export const getProfileName = (profileUrl: string) => {
  *
  * @param profileUrl {string} Url of the instagram profile you want to scrape
  * @param proxy {string} Use a proxy for downloader if given.
+ * @param headless
  */
-export const downloadProfile = async ({profileUrl, proxy}: { profileUrl: string, proxy?: string }) => {
+export const downloadProfile = async ({
+                                          profileUrl,
+                                          proxy, headless
+                                      }: { profileUrl: string, proxy?: string, headless?: boolean }) => {
 
     // make room to store contents scraped.
     const profileDir = path.join(INSTAGRAM_DATA_DIR, getProfileName(profileUrl)!);
@@ -59,7 +63,7 @@ export const downloadProfile = async ({profileUrl, proxy}: { profileUrl: string,
     console.log(profileDir);
 
     // fetch profile's content urls via puppeteer.
-    const profile = await fetchProfile({profileUrl});
+    const profile = await fetchProfile({profileUrl, headless});
 
     // use downloader to download all file urls to user's home dir:
     // 1. download timeline files.
@@ -76,13 +80,13 @@ export const downloadProfile = async ({profileUrl, proxy}: { profileUrl: string,
  * Fetch instagram profile's media content.
  * @param profileUrl {string} Url of the instagram profile you want to scrape
  */
-export const fetchProfile = async ({profileUrl}: { profileUrl: string }) => {
+export const fetchProfile = async ({profileUrl, headless}: { profileUrl: string, headless?: boolean }) => {
 
     // scrape timeline feeds via puppeteer
-    const profile = await scrapeTimeline({profileUrl});
+    const profile = await scrapeTimeline({profileUrl, headless});
 
     // scrape igtv videos feeds via puppeteer
-    const {igtvFiles, igtv} = await scrapeIGTV({igtvUrl: `${getPureProfileUrl(profileUrl)}channel`});
+    const {igtvFiles, igtv} = await scrapeIGTV({igtvUrl: `${getPureProfileUrl(profileUrl)}channel`, headless});
     profile.igtv = igtv;
     profile.igtvFiles = igtvFiles;
 
@@ -105,11 +109,13 @@ export const fetchProfile = async ({profileUrl}: { profileUrl: string }) => {
  * Please login your instagram account manually, cookies will be saved to the app's data dir which is in user's home dir.
  *
  * @param profileUrl {string} Url of the instagram profile you want to scrape
+ * @param headless If to run puppeteer in headless mode.
  */
 export const scrapeTimeline = async (
     {
         profileUrl,
-    }: { profileUrl: string, }) => {
+        headless,
+    }: { profileUrl: string, headless?: boolean }) => {
 
     // done in promise
     return new Promise<InstagramProfile>(async resolve => {
@@ -122,11 +128,7 @@ export const scrapeTimeline = async (
             timelineFiles: []
         }
         // init puppeteer
-        const browser = await puppeteer.launch({
-            headless: false,
-            executablePath: executablePaths[process.platform], // use local chrome installation
-            defaultViewport: undefined,
-        });
+        const browser = await newBrowser({headless});
         const page = await browser.newPage();
 
         // start scrapping when profile page is loaded.
@@ -253,7 +255,8 @@ export const getIGTVUrl = (node: InstagramTimelineNode) => `https://www.instagra
 export const scrapeIGTV = async (
     {
         igtvUrl,
-    }: { igtvUrl: string, }) => {
+        headless,
+    }: { igtvUrl: string, headless?: boolean }) => {
     // done in promise
     return new Promise<InstagramProfile>(async resolve => {
 
@@ -270,14 +273,10 @@ export const scrapeIGTV = async (
         };
 
         // init puppeteer
-        const browser = await puppeteer.launch({
-            headless: false,
-            executablePath: executablePaths[process.platform],
-            defaultViewport: undefined,
-        });
+        const browser = await newBrowser({headless});
 
         const page = await browser.newPage();
-        let timeout:Timeout;
+        let timeout: Timeout;
 
         // start scraping at when loaded
         page.on('load', async () => {

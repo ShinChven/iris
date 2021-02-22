@@ -38,12 +38,17 @@ export async function autoScroll(page: puppeteer.Page) {
     });
 }
 
+interface NewBrowserArgs {
+    headless?: boolean;
+}
+
 /**
  * init puppeteer
  */
-export const newBrowser = async () => {
+export const newBrowser = async (args?: NewBrowserArgs) => {
+    const {headless = false} = args || {};
     return await puppeteer.launch({
-        headless: false,
+        headless,
         executablePath: executablePaths[process.platform],
         defaultViewport: undefined,
     });
