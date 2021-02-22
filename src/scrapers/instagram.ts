@@ -7,6 +7,7 @@ import qs from "qs";
 import {sleep} from "../utils/sleep-promise";
 import {taskId} from "../utils/task-id";
 import {downloadFiles} from "../io/download";
+import {ScraperOptions} from "../options";
 import Timeout = NodeJS.Timeout;
 
 export const INSTAGRAM_DATA_DIR = path.join(APP_DATA_DIR, 'instagram');
@@ -42,6 +43,10 @@ export const getProfileName = (profileUrl: string) => {
     return undefined;
 }
 
+export interface DownloadInstagramProfileArgs extends ScraperOptions {
+    profileUrl: string,
+}
+
 /**
  * Download the instagram profile's timeline posts and IGTV videos.
  *
@@ -55,7 +60,7 @@ export const getProfileName = (profileUrl: string) => {
 export const downloadProfile = async ({
                                           profileUrl,
                                           proxy, headless
-                                      }: { profileUrl: string, proxy?: string, headless?: boolean }) => {
+                                      }: DownloadInstagramProfileArgs) => {
 
     // make room to store contents scraped.
     const profileDir = path.join(INSTAGRAM_DATA_DIR, getProfileName(profileUrl)!);

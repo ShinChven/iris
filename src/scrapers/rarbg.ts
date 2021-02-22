@@ -5,6 +5,7 @@ import puppeteer from 'puppeteer-core';
 import {sleep} from "../utils/sleep-promise";
 import {taskId} from "../utils/task-id";
 import fs from "fs-extra";
+import {ScraperOptions} from "../options";
 
 export const RARBG_HOST = 'https://rarbgprx.org';
 export const RARBG_DATA_DIR = path.join(APP_DATA_DIR, 'rarbg');
@@ -18,14 +19,15 @@ interface RarbgTorrent {
     posterFile?: string;
 }
 
-interface RarbgScrapeArgs {
+interface RarbgScrapeArgs extends ScraperOptions {
     url: string;
     headless?: boolean;
     browser?: puppeteer.Browser;
 }
 
-export const downloadRarbgSearchResults = async ({url, headless}: RarbgScrapeArgs) => {
-    const torrents = await scrapeRarbgSearchResult({url, headless});
+export const downloadRarbgSearchResults = async (scrapeArgs: RarbgScrapeArgs) => {
+    const torrents = await scrapeRarbgSearchResult(scrapeArgs);
+    const {url,} = scrapeArgs;
     const result = {url, torrents};
     const id = taskId();
     await fs.outputJSON(path.join(RARBG_DATA_DIR, `${id}.json`), result);
@@ -48,7 +50,8 @@ const withDomain = (urlPath: string) => {
 export const RARBG_SEARCH_RESULT_ITEM_SELECTOR = 'table.lista2t > tbody > tr > td:nth-child(2) > a:nth-child(1)';
 export const RARBG_SEARCH_RESULT_NEXT_PAGE_BUTTON_SELECTOR = '#pager_links > a:last-child';
 
-export const scrapeRarbgSearchResult = async ({url, headless}: RarbgScrapeArgs) => {
+export const scrapeRarbgSearchResult = async (scrapeArgs: RarbgScrapeArgs) => {
+    const {url, headless, timeout, abortOnError, clock} = scrapeArgs;
     return new Promise<Array<RarbgTorrent>>(async resolve => {
         let browser: puppeteer.Browser;
         let page: puppeteer.Page;
@@ -65,25 +68,31 @@ export const scrapeRarbgSearchResult = async ({url, headless}: RarbgScrapeArgs) 
             const elements = await page.$$(RARBG_SEARCH_RESULT_ITEM_SELECTOR);
             if (elements.length > 0) {
                 for (let i = 0; i < elements.length; i++) {
-                    console.log(i);
+                    console.log(`index in current page:${i}\t current page length:${elements.length}\t scraped:${torrents.length}`);
                     const e = elements[i];
                     try {
                         const href = await e.evaluate(a => a.getAttribute('href'));
                         const u = withDomain(href);
                         if (typeof u === 'string' && u.indexOf('https://rarbgprx.org/torrent/') === 0) {
-                            const t = await scrapeRarbgTorrent({url: u, browser});
+                            const t = await scrapeRarbgTorrent({url: u, browser, timeout});
                             torrents.push(t);
                             // noinspection PointlessArithmeticExpressionJS
-                            await sleep(1 * 1000);
+                            await sleep(clock || 1 * 1000);
                         }
                     } catch (e) {
                         console.error(e);
+                        if (abortOnError) {
+                            resolve(torrents);
+                            console.log(`abort on error @ ${u}`);
+                            await browser.close();
+                            return;
+                        }
                     }
                 }
                 if (elements.length !== 26) {
                     browser?.close();
                     resolve(torrents);
-                }else{
+                } else {
                     try {
                         const nextPagePath = (await page.$eval(RARBG_SEARCH_RESULT_NEXT_PAGE_BUTTON_SELECTOR, a => a.getAttribute('href'))) || undefined;
                         await page.goto(withDomain(nextPagePath!)!);
@@ -111,12 +120,26 @@ export const RARBG_TORRENT_MAGNET_LINK_SELECTOR = 'body > table:nth-child(6) > t
 export const RARBG_TORRENT_POSTER_URL_SELECTOR = 'body > table:nth-child(6) > tbody > tr > td:nth-child(2) > div > table > tbody > tr:nth-child(2) > td > div > table > tbody > tr:nth-child(4) > td.lista > img';
 
 
-export const scrapeRarbgTorrent = async ({url, browser, headless}: RarbgScrapeArgs) => {
+export const scrapeRarbgTorrent = async (scrapeArgs: RarbgScrapeArgs) => {
+    const {url, browser, headless, timeout} = scrapeArgs;
     return new Promise<RarbgTorrent>(async (resolve, reject) => {
         let b: puppeteer.Browser = browser || await newBrowser({headless});
         let page = await b.newPage();
         const rarbgTorrent: RarbgTorrent = {url}
+        let t: NodeJS.Timeout;
+        if (typeof timeout === 'number' && timeout > 0) {
+            t = setTimeout(async () => {
+                reject('timeout');
+                await page.close();
+                if (browser === undefined) {
+                    b?.close();
+                }
+            }, timeout);
+        }
         page.on('load', async () => {
+            if (t !== undefined) {
+                clearTimeout(t);
+            }
             const u = page.url();
             console.log("page loaded @", u);
             if (u.indexOf('https://rarbgprx.org/torrent') >= 0) {
