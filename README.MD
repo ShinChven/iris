@@ -19,8 +19,16 @@ npm link
 After installation, `iris` command should be available, just use it in your terminal:
 
 ```bash
-iris <URL-TO-SCRAPE>
+# COMMAND
+iris <URL-TO-SCRAPE> [...options]
+# EXAMPLE
+iris https://www.instagram.com/{PROFILE_NAME} --headless
 ```
+
+### Options
+|Option|Description|
+|---|---|
+|--headless|Run puppeteer in headless mode. When you have log in to some sites, add this option to run scraper without Chrome UI.|
 
 ### Scrape Instagram
 
