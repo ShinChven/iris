@@ -11,6 +11,10 @@
 - Clone this repository.
 - Run script below to install this cli:
 
+```bash
+npm link
+```
+
 ### About puppeteer's Chrome Executable Path
 
 Some scrapers use [puppeteer-core](https://www.npmjs.com/package/puppeteer-core) to scrape content. 
@@ -19,9 +23,7 @@ Some scrapers use [puppeteer-core](https://www.npmjs.com/package/puppeteer-core)
 
 Please make sure you have installed Chrome to default path. If not, you should modify the [executablePath](https://github.com/ShinChven/iris/blob/master/src/utils/puppeteer.ts) here.
 
-```bash
-npm link
-```
+
 
 ## Usage
 
@@ -53,7 +55,7 @@ Manual login is required as instagram is preventing puppeteer from typing in use
 
 Please log in your instagram account manually when chrome pops up, cookies will be saved to the app's data dir (which is in user's home dir) to reuse.
 
-Please `DO NOT` use your main account for scraping might your account banned.
+Please `DO NOT` use your main account for scraping might get your account banned.
 
 Please `DO NOT` steal others' privacy and respect contents owner.
 
