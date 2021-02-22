@@ -11,6 +11,10 @@
 - Clone this repository.
 - Run script below to install this cli:
 
+```bash
+npm link
+```
+
 ### About puppeteer's Chrome Executable Path
 
 Some scrapers use [puppeteer-core](https://www.npmjs.com/package/puppeteer-core) to scrape content. 
@@ -19,9 +23,7 @@ Some scrapers use [puppeteer-core](https://www.npmjs.com/package/puppeteer-core)
 
 Please make sure you have installed Chrome to default path. If not, you should modify the [executablePath](https://github.com/ShinChven/iris/blob/master/src/utils/puppeteer.ts) here.
 
-```bash
-npm link
-```
+
 
 ## Usage
 
