@@ -27,6 +27,7 @@
     "fs-extra": "^9.1.0",
     "moment": "^2.29.1",
     "puppeteer-core": "^7.1.0",
+    "qs": "^6.9.6",
     "superagent": "^6.1.0",
     "superagent-proxy": "^2.1.0"
   },

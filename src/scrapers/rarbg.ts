@@ -6,6 +6,7 @@ import {sleep} from "../utils/sleep-promise";
 import {taskId} from "../utils/task-id";
 import fs from "fs-extra";
 import {ScraperOptions} from "../options";
+import qs from "qs";
 
 export const RARBG_HOST = 'https://rarbgprx.org';
 export const RARBG_DATA_DIR = path.join(APP_DATA_DIR, 'rarbg');
@@ -25,13 +26,63 @@ interface RarbgScrapeArgs extends ScraperOptions {
     browser?: puppeteer.Browser;
 }
 
+export const getRarbgResultFilename = (url: string) => {
+    const querystring = url.split('?')[1];
+    const queries: { search?: string, category?: string | Array<string> } = qs.parse(querystring);
+    const {search, category} = queries;
+    const nameComponents: Array<string> = [];
+    if (typeof search === "string") {
+        const searchString = search?.split(' ').join('_');
+        if (searchString) {
+            nameComponents.push(searchString);
+        }
+    }
+    let categoryArr: Array<number> = [];
+    if (typeof category === 'string') {
+        categoryArr = category?.split(';').map(i => parseInt(i));
+    } else if (Array.isArray(category)) {
+        categoryArr = category.map(i => parseInt(i));
+    }
+    if (categoryArr.length > 0) {
+        categoryArr.sort((a, b) => a - b);
+        const categoryString = categoryArr.join('_');
+        if (categoryString) {
+            nameComponents.push(categoryString);
+        }
+    }
+    return nameComponents.join('_in_');
+}
+
+const getMagnetURL = (m: string) => {
+    return m.split('&')[0];
+}
+
 export const downloadRarbgSearchResults = async (scrapeArgs: RarbgScrapeArgs) => {
     const torrents = await scrapeRarbgSearchResult(scrapeArgs);
     const {url,} = scrapeArgs;
     const result = {url, torrents};
+    const resultFilename = getRarbgResultFilename(url);
     const id = taskId();
-    await fs.outputJSON(path.join(RARBG_DATA_DIR, `${id}.json`), result);
-    await fs.outputFile(path.join(RARBG_DATA_DIR, `${id}.txt`), torrents.map(t => t.magnetLink).join('\n'));
+    await fs.outputJSON(path.join(RARBG_DATA_DIR, `${id}-${resultFilename}.json`), result, {encoding: 'utf-8'});
+    const magnets: Record<string, string> = {};
+
+    const magnetFile = path.join(RARBG_DATA_DIR, `${resultFilename === '' ? id : resultFilename}.txt`);
+    if (fs.existsSync(magnetFile)) {
+        const str = await fs.readFile(magnetFile, 'utf-8');
+        const existed = str.split('\n');
+        existed.forEach(m => {
+            magnets[getMagnetURL(m)] = m;
+        });
+    }
+    torrents.forEach(t => {
+        const m = t.magnetLink;
+        if (typeof m === 'string') {
+            magnets[getMagnetURL(m)] = m;
+        }
+    })
+    console.log(magnets.length);
+    await fs.outputFile(magnetFile, Object.keys(magnets).map(k => magnets[k]).join('\n'), {encoding: 'utf-8'});
+    console.log('magnets saved to', magnetFile);
     return result;
 }
 
@@ -62,6 +113,12 @@ export const scrapeRarbgSearchResult = async (scrapeArgs: RarbgScrapeArgs) => {
         page.on('load', async () => {
             const u = page.url();
             console.log("page loaded @", u);
+
+            if (u.indexOf('https://rarbgprx.org/threat_defence.php') >= 0) {
+                console.log('Please enter captcha code in browser...')
+                return;
+            }
+
             if (u.indexOf('https://rarbgprx.org/torrents.php') >= 0) {
                 outputCookies({page, cookiesPath: RARBG_COOKIES_FILENAME}).then().catch();
             }
@@ -69,7 +126,6 @@ export const scrapeRarbgSearchResult = async (scrapeArgs: RarbgScrapeArgs) => {
 
             if (elements.length > 0) {
                 for (let i = 0; i < elements.length; i++) {
-                    console.log(`row:${i}\t table length:${elements.length}\t scraped:${torrents.length}`);
                     const e = elements[i];
                     try {
                         const href = await e.evaluate(a => a.getAttribute('href'));
@@ -77,6 +133,7 @@ export const scrapeRarbgSearchResult = async (scrapeArgs: RarbgScrapeArgs) => {
                         if (typeof u === 'string' && u.indexOf('https://rarbgprx.org/torrent/') === 0) {
                             const t = await scrapeRarbgTorrent({url: u, browser, timeout});
                             torrents.push(t);
+                            console.log(`row:${i}\t table length:${elements.length}\t scraped:${torrents.length}`);
                             // noinspection PointlessArithmeticExpressionJS
                             await sleep(clock || 1 * 1000);
                         }
@@ -144,7 +201,7 @@ export const scrapeRarbgTorrent = async (scrapeArgs: RarbgScrapeArgs) => {
             const u = page.url();
             console.log("page loaded @", u);
             if (u.indexOf('https://rarbgprx.org/torrent') >= 0) {
-                outputCookies({page, cookiesPath: RARBG_COOKIES_FILENAME}).then().catch();
+                // outputCookies({page, cookiesPath: RARBG_COOKIES_FILENAME}).then().catch();
                 try {
                     rarbgTorrent.title = (await page.$eval(RARBG_TORRENT_FILE_SELECTOR, anchor => anchor.textContent)) || undefined;
                 } catch (e) {
