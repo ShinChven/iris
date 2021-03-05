@@ -203,18 +203,20 @@ export const scrapeRarbgTorrent = async (scrapeArgs: RarbgScrapeArgs) => {
             if (u.indexOf('https://rarbgprx.org/torrent') >= 0) {
                 // outputCookies({page, cookiesPath: RARBG_COOKIES_FILENAME}).then().catch();
                 try {
-                    rarbgTorrent.title = (await page.$eval(RARBG_TORRENT_FILE_SELECTOR, anchor => anchor.textContent)) || undefined;
-                } catch (e) {
-                    console.error(e);
-                }
-                try {
                     rarbgTorrent.torrentFile = (await page.$eval(RARBG_TORRENT_FILE_SELECTOR, anchor => anchor.getAttribute('href'))) || undefined;
                     rarbgTorrent.torrentFile = withDomain(rarbgTorrent.torrentFile!);
+                    rarbgTorrent.magnetLink = (await page.$eval(RARBG_TORRENT_MAGNET_LINK_SELECTOR, anchor => anchor.getAttribute('href'))) || undefined;
                 } catch (e) {
-                    console.error(e);
+                    // if torrentFile url or magnet link is not found, reject it.
+                    reject(e);
+                    await page.close();
+                    if (browser === undefined) {
+                        b?.close();
+                    }
+                    return;
                 }
                 try {
-                    rarbgTorrent.magnetLink = (await page.$eval(RARBG_TORRENT_MAGNET_LINK_SELECTOR, anchor => anchor.getAttribute('href'))) || undefined;
+                    rarbgTorrent.title = (await page.$eval(RARBG_TORRENT_FILE_SELECTOR, anchor => anchor.textContent)) || undefined;
                 } catch (e) {
                     console.error(e);
                 }
