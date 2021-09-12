@@ -1,11 +1,11 @@
-import {loadCookies, newBrowser, outputCookies} from "../utils/puppeteer";
+import { loadCookies, newBrowser, outputCookies } from "../utils/puppeteer";
 import path from "path";
-import {APP_DATA_DIR} from "../utils/paths";
+import { APP_DATA_DIR } from "../utils/paths";
 import puppeteer from 'puppeteer-core';
-import {sleep} from "../utils/sleep-promise";
-import {taskId} from "../utils/task-id";
+import { sleep } from "../utils/sleep-promise";
+import { taskId } from "../utils/task-id";
 import fs from "fs-extra";
-import {ScraperOptions} from "../options";
+import { ScraperOptions } from "../options";
 import qs from "qs";
 
 export const RARBG_HOST = 'https://rarbgprx.org';
@@ -29,7 +29,7 @@ interface RarbgScrapeArgs extends ScraperOptions {
 export const getRarbgResultFilename = (url: string) => {
     const querystring = url.split('?')[1];
     const queries: { search?: string, category?: string | Array<string> } = qs.parse(querystring);
-    const {search, category} = queries;
+    const { search, category } = queries;
     const nameComponents: Array<string> = [];
     if (typeof search === "string") {
         const searchString = search?.split(' ').join('_');
@@ -59,11 +59,11 @@ const getMagnetURL = (m: string) => {
 
 export const downloadRarbgSearchResults = async (scrapeArgs: RarbgScrapeArgs) => {
     const torrents = await scrapeRarbgSearchResult(scrapeArgs);
-    const {url,} = scrapeArgs;
-    const result = {url, torrents};
+    const { url, } = scrapeArgs;
+    const result = { url, torrents };
     const resultFilename = getRarbgResultFilename(url);
     const id = taskId();
-    await fs.outputJSON(path.join(RARBG_DATA_DIR, `${id}-${resultFilename}.json`), result, {encoding: 'utf-8'});
+    await fs.outputJSON(path.join(RARBG_DATA_DIR, `${id}-${resultFilename}.json`), result, { encoding: 'utf-8' });
     const magnets: Record<string, string> = {};
 
     const magnetFile = path.join(RARBG_DATA_DIR, `${resultFilename === '' ? id : resultFilename}.txt`);
@@ -81,12 +81,12 @@ export const downloadRarbgSearchResults = async (scrapeArgs: RarbgScrapeArgs) =>
         }
     })
     console.log(magnets.length);
-    await fs.outputFile(magnetFile, Object.keys(magnets).map(k => magnets[k]).join('\n'), {encoding: 'utf-8'});
+    await fs.outputFile(magnetFile, Object.keys(magnets).map(k => magnets[k]).join('\n'), { encoding: 'utf-8' });
     console.log('magnets saved to', magnetFile);
     return result;
 }
 
-const withDomain = (urlPath: string) => {
+const withDomain = (urlPath?: string) => {
     // noinspection SuspiciousTypeOfGuard
     if (typeof urlPath !== 'string') {
         return undefined
@@ -102,11 +102,11 @@ export const RARBG_SEARCH_RESULT_ITEM_SELECTOR = 'table.lista2t > tbody > tr > t
 export const RARBG_SEARCH_RESULT_NEXT_PAGE_BUTTON_SELECTOR = '#pager_links > a:last-child';
 
 export const scrapeRarbgSearchResult = async (scrapeArgs: RarbgScrapeArgs) => {
-    const {url, headless, timeout, abortOnError, clock} = scrapeArgs;
+    const { url, headless, timeout, abortOnError, clock } = scrapeArgs;
     return new Promise<Array<RarbgTorrent>>(async resolve => {
         let browser: puppeteer.Browser;
         let page: puppeteer.Page;
-        browser = await newBrowser({headless});
+        browser = await newBrowser({ headless });
         page = await browser.newPage();
         const torrents: Array<RarbgTorrent> = [];
 
@@ -120,7 +120,7 @@ export const scrapeRarbgSearchResult = async (scrapeArgs: RarbgScrapeArgs) => {
             }
 
             if (u.indexOf('https://rarbgprx.org/torrents.php') >= 0) {
-                outputCookies({page, cookiesPath: RARBG_COOKIES_FILENAME}).then().catch();
+                outputCookies({ page, cookiesPath: RARBG_COOKIES_FILENAME }).then().catch();
             }
             const elements = await page.$$(RARBG_SEARCH_RESULT_ITEM_SELECTOR);
 
@@ -129,9 +129,9 @@ export const scrapeRarbgSearchResult = async (scrapeArgs: RarbgScrapeArgs) => {
                     const e = elements[i];
                     try {
                         const href = await e.evaluate(a => a.getAttribute('href'));
-                        const u = withDomain(href);
+                        const u = withDomain(href || undefined);
                         if (typeof u === 'string' && u.indexOf('https://rarbgprx.org/torrent/') === 0) {
-                            const t = await scrapeRarbgTorrent({url: u, browser, timeout});
+                            const t = await scrapeRarbgTorrent({ url: u, browser, timeout });
                             torrents.push(t);
                             console.log(`row:${i}\t table length:${elements.length}\t scraped:${torrents.length}`);
                             // noinspection PointlessArithmeticExpressionJS
@@ -168,7 +168,7 @@ export const scrapeRarbgSearchResult = async (scrapeArgs: RarbgScrapeArgs) => {
 
         });
 
-        await loadCookies({page, cookiesPath: RARBG_COOKIES_FILENAME});
+        await loadCookies({ page, cookiesPath: RARBG_COOKIES_FILENAME });
         await page.goto(url);
     });
 }
@@ -179,11 +179,11 @@ export const RARBG_TORRENT_POSTER_URL_SELECTOR = 'body > table:nth-child(6) > tb
 
 
 export const scrapeRarbgTorrent = async (scrapeArgs: RarbgScrapeArgs) => {
-    const {url, browser, headless, timeout} = scrapeArgs;
+    const { url, browser, headless, timeout } = scrapeArgs;
     return new Promise<RarbgTorrent>(async (resolve, reject) => {
-        let b: puppeteer.Browser = browser || await newBrowser({headless});
+        let b: puppeteer.Browser = browser || await newBrowser({ headless });
         let page = await b.newPage();
-        const rarbgTorrent: RarbgTorrent = {url}
+        const rarbgTorrent: RarbgTorrent = { url }
         let t: NodeJS.Timeout;
         if (typeof timeout === 'number' && timeout > 0) {
             t = setTimeout(async () => {
@@ -234,7 +234,7 @@ export const scrapeRarbgTorrent = async (scrapeArgs: RarbgScrapeArgs) => {
                 b?.close();
             }
         })
-        await loadCookies({page, cookiesPath: RARBG_COOKIES_FILENAME});
+        await loadCookies({ page, cookiesPath: RARBG_COOKIES_FILENAME });
         await page.goto(url);
     });
 }

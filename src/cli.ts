@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env ts-node
 import {APP_DATA_DIR} from "./utils/paths";
 import {downloadProfile} from "./scrapers/instagram";
 import {getConfig, setConfig} from "./utils/config";
