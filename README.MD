@@ -53,7 +53,7 @@ The program will fire up a Chrome instance via puppeteer to scrape instagram pro
 
 Manual login is required as instagram is preventing puppeteer from typing in username and password programmatically, as of Feb 15th, 2021. 
 
-Please log in your instagram account manually when chrome pops up, cookies will be saved to the app's data dir (which is in user's home dir) to reuse.
+Please log in your instagram account manually when chrome pops up, cookies will be saved to the app's data dir (which is in user's home dir) to be reused.
 
 Please `DO NOT` use your main account for scraping might get your account banned.
 
