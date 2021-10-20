@@ -55,9 +55,9 @@ Manual login is required as instagram is preventing puppeteer from typing in use
 
 Please log in your instagram account manually when chrome pops up, cookies will be saved to the app's data dir (which is in user's home dir) to be reused.
 
-Please `DO NOT` use your main account for scraping might get your account banned.
+Please `DO NOT` use your main account for scraping, doing so might get your account banned.
 
-Please `DO NOT` steal others' privacy and respect contents owner.
+Please `DO NOT` steal others' privacy and respect content owner.
 
 Scraping can be slow.
 
